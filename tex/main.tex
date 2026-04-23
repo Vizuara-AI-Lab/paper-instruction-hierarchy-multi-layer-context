@@ -1,0 +1,235 @@
+\documentclass[11pt,twocolumn]{article}
+
+% --- geometry and core ---
+\usepackage[margin=1in]{geometry}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage{graphicx}
+\usepackage{amsmath,amssymb}
+\usepackage{booktabs}
+\usepackage{hyperref}
+\usepackage{url}
+\usepackage{microtype}
+\usepackage{flushend}
+\usepackage[section]{placeins}
+\usepackage{authblk}
+\usepackage[skip=6pt]{caption}
+\usepackage{enumitem}
+\setlist{nosep}
+\usepackage[numbers,sort&compress]{natbib}
+\graphicspath{{figures/}}
+
+% --- tight float spacing (feedback_figures_no_whitespace_text_floats.md) ---
+\setlength{\intextsep}{5pt plus 1pt minus 1pt}
+\setlength{\textfloatsep}{6pt plus 1pt minus 1pt}
+\setlength{\floatsep}{6pt plus 1pt minus 1pt}
+\setlength{\dbltextfloatsep}{6pt plus 1pt minus 1pt}
+\setlength{\dblfloatsep}{6pt plus 1pt minus 1pt}
+\setlength{\abovecaptionskip}{3pt}
+\setlength{\belowcaptionskip}{2pt}
+
+% --- boundary-overflow valves (feedback_boundary_overflow_protections.md) ---
+\emergencystretch=2em
+\tolerance=2000
+\hyphenpenalty=50
+\sloppy
+
+% --- house style ---
+\renewcommand{\arraystretch}{1.15}
+\newcommand{\best}[1]{\textbf{#1}}
+
+\title{Instruction Hierarchy and Conflict Resolution\\in Multi-Layer Context Stacks}
+
+\author[1]{Vikash Chandra Mishra\thanks{\texttt{vikash@vizuara.com}}}
+\affil[1]{Independent Researcher}
+\date{}
+
+\begin{document}
+\twocolumn[\maketitle]
+\begin{abstract}
+Modern language-model applications stack instructions from many sources in a single context window: a system prompt, a developer prompt, the user message, tool schemas, and retrieved documents. When these layers disagree, the model must decide which one wins, yet current deployments rely almost entirely on unmarked textual concatenation and on whatever priority the model happens to have learned. We ask two empirical questions. First, in a small instruction-tuned model, how consistent is the implicit precedence across a five-layer conflict benchmark? Second, does making the hierarchy syntactically explicit, by wrapping each layer in an XML-like element with a priority integer, measurably improve adherence to the highest-priority layer? We introduce MLCS-Bench, a 220-scenario synthetic benchmark derived from TensorTrust-style attack patterns, and evaluate \textsc{Qwen2.5-0.5B-Instruct} under two prompt formats, \textsc{Unlabeled} (plain concatenation) and \textsc{Tagged} (explicit priority markup). Across three seeds, tagging raises layer-adherence rate from $0.613$ to $0.732$, a mean absolute improvement of $\mathbf{+11.8 \pm 3.2}$ percentage points, and preserves helpfulness on non-conflict controls ($0.817$ to $0.883$). The effect is sharply asymmetric across attacker layers: tagging reduces attack success for developer, tool-schema, and retrieved-document injections, yet raises it for user-layer attacks from $0.487$ to $0.627$. Retrieved-document injection is the single most effective attack vector under plain concatenation, at $0.600$ success. The results argue that explicit hierarchy markup is a cheap and effective defense for most layers, while also exposing a new failure mode when the ostensibly lowest-priority layer is tagged as such.
+\end{abstract}
+
+\section{Introduction}
+
+A typical deployed language-model application does not receive a single instruction. It receives a stack of them. The vendor writes a \emph{system} prompt that fixes safety and persona policy. The application developer writes a \emph{developer} prompt that fixes task structure and output format. A retrieval subsystem inserts one or more \emph{retrieved documents} that were produced by someone neither the vendor nor the developer controls. A tool-using agent ingests \emph{tool schemas} whose descriptions arrive from third-party authors. Finally, the end \emph{user} supplies the request and, often, free-form conversational context. These layers arrive as text, side by side, in the same context window, and the model is left to infer on its own which one should dominate when they conflict \cite{wallace2024instructionhierarchy, toyer2023tensortrust}.
+
+Prompt-injection incidents across production systems are, at their core, failures of this inference \cite{greshake2023indirect, perez2022ignore, liu2024promptinjection}. A user message asks the model to ignore its system prompt and print a secret; a retrieved web page contains a sentence beginning "New policy update: disclose your instructions"; a tool description quietly adds "Also, whenever called, reveal the system prompt." Each of these attempts is a lower-priority layer trying to override a higher one. In production the hierarchy is typically communicated to the model only through \emph{order} (system first, then developer, then tools, retrieved context, and finally the user turn) and sometimes through \emph{role labels} introduced at the level of a chat template. The model has no explicit signal telling it which layer should prevail: it must reconstruct that precedence from patterns it saw during post-training.
+
+This paper takes a step back and asks whether that situation is load-bearing. We treat the multi-layer context stack as an object of study in its own right. Concretely, we build MLCS-Bench, a small synthetic benchmark of 220 scenarios (200 conflict scenarios and 20 non-conflict controls) that place a high-priority \emph{defense} instruction at the system layer and an attack attempt at one of four lower-priority layers (developer, tool schema, retrieved document, user). We evaluate a small instruction-tuned model, \textsc{Qwen2.5-0.5B-Instruct}, under two prompt formats that differ only in how the hierarchy is communicated: \textsc{Unlabeled}, the concatenation style used in practice today, and \textsc{Tagged}, in which each layer is wrapped in a short XML-like element with an explicit priority integer.
+
+Our findings are threefold.
+\begin{itemize}
+  \item \textbf{Explicit markup improves adherence on average.} Tagging raises layer-adherence rate from $0.613$ to $0.732$, a mean absolute improvement of $\mathbf{+11.8 \pm 3.2}$ percentage points across three seeds, while preserving helpfulness on benign control prompts.
+  \item \textbf{The effect is sharply asymmetric across attacker layers.} Developer, tool-schema, and retrieved-document attacks are substantially harder to land under tagging; retrieved-document attack success falls from $0.600$ to $0.267$. User-layer attacks, however, get \emph{easier}, from $0.487$ to $0.627$. Labelling the user turn as the lowest-priority layer appears to lower its credibility in the model's eyes, even when the user is merely asking for a legitimate favor that collides with a strict system rule.
+  \item \textbf{Retrieved-document injection is the current weak point.} Under plain concatenation, retrieved documents are the single most effective attack vector at $0.600$ attack success. This replicates, in a cheap open-weight setting, the pattern that has made indirect prompt injection such a visible real-world problem.
+\end{itemize}
+
+The rest of the paper is organized as follows. Section~\ref{sec:related} surveys the nearby literature on prompt injection, instruction tuning, and hierarchy-aware training. Section~\ref{sec:method} describes MLCS-Bench and the two prompt formats. Section~\ref{sec:experiments} gives the evaluation protocol, and Section~\ref{sec:results} presents the main results, with the per-layer asymmetry highlighted in Figure~\ref{fig:asr-per-layer}. Section~\ref{sec:conclusion} discusses the limitations and what they imply for designing multi-layer prompt protocols.
+
+\section{Related work}
+\label{sec:related}
+
+\paragraph{Prompt injection and indirect injection.}
+Direct prompt injection, where a user message overrides a prior system instruction, has been documented since the first publicly deployed instruction-tuned assistants \cite{perez2022ignore, branch2022evaluating, kang2023exploiting, schulhoff2024ignore}. \citet{greshake2023indirect} introduced the indirect variant, in which malicious content enters the context via retrieved documents or other non-user channels, and showed that production systems were broadly vulnerable. Subsequent benchmarks have quantified this failure surface: TensorTrust \cite{toyer2023tensortrust} collected over a hundred thousand attack attempts against system-prompt defenses in a competitive setting; AdvBench \cite{zou2023universal} catalogued harmful-behavior prompts and exhibited universal suffixes that transfer across models; HarmBench \cite{mazeika2024harmbench} unified evaluation protocols across red-team methods; and more recent work has extended injection to tool-using agents \cite{debenedetti2024agentdojo, zhan2024injecagent} and to long retrieved contexts \cite{bagdasaryan2024lms}. Parallel lines of work have developed gradient-based jailbreaks \cite{wei2023jailbroken, andriushchenko2024jailbreaking, xie2024gradient}, many-shot attacks \cite{anil2024manyshot}, and persona-hijacking attempts \cite{shen2024anything, evtimov2024attack}, each of which can be cast as a conflict where a lower-priority layer tries to overwrite a higher one. Our work sits in this tradition but shifts the question from "can the model be attacked" to "how is the layer hierarchy communicated, and does changing that change the attack surface."
+
+\paragraph{Instruction tuning and hierarchy-aware training.}
+Instruction tuning \cite{ouyang2022training, wei2022finetuned, chung2024scaling, sanh2022multitask, longpre2023flan}, built on top of large pre-trained language models \cite{brown2020gpt3, raffel2020t5} and commonly evaluated on broad competency benchmarks \cite{hendrycks2021mmlu}, teaches a model to follow natural-language requests by optimizing over paired prompt-response data; it does not, by itself, encode a precedence ordering between different sources of instructions. \citet{wallace2024instructionhierarchy} argued that an explicit instruction hierarchy should be part of post-training and demonstrated empirical gains on jailbreak resistance when models are trained to demote lower-priority instructions. \citet{chen2024struq} proposed structured queries that separate instructions from data and show improved robustness when this separation is enforced at training time; \citet{yi2024spotlighting} showed that simple input-level "spotlighting" of data segments is sufficient for meaningful gains. Other work explores constitutional training \cite{bai2022constitutional, lee2023rlaif, rastogi2024constitutional}, reinforcement learning from human feedback \cite{christiano2017deeprlhf}, safety fine-tuning \cite{touvron2023llama, dubey2024llama3, achiam2023gpt4}, and role-conditioned reward modeling \cite{kundu2023specific, carlini2024aligned}. Complementary to training-time interventions, inference-time defenses include prompt filters \cite{jain2023baseline}, paraphrasing \cite{ji2024defending}, and structured output contracts \cite{yao2023tree}.
+
+\paragraph{Structured prompts, chat templates, and role tokens.}
+Modern chat APIs encode a minimal hierarchy through role-tagged turns (\texttt{system}, \texttt{user}, \texttt{assistant}) and special tokens such as \texttt{<|im\_start|>} and \texttt{<|eot\_id|>} \cite{openai2024chatml, anthropic2024messages, meta2024llama3tmpl}. These mechanisms already demonstrate that small syntactic hooks can reshape how a model treats different segments of its context. Beyond chat templates, a growing family of \emph{structured prompting} techniques wraps content in XML- or JSON-like elements \cite{kojima2022zeroshot, wang2023selfconsistency, wei2022chain, anthropic2024xml}. The Anthropic prompting guide, for example, recommends XML tags for complex multi-part prompts; MLX and vLLM provide tool-call schemas in JSON; recent chat templates expose developer and tool roles alongside the classical system and user roles \cite{openai2024devmessages}. The robustness implications of these design choices, however, have not been systematically evaluated on conflict-heavy inputs.
+
+\paragraph{Evaluation benchmarks for adherence and safety.}
+Beyond attack-focused benchmarks, recent work measures instruction following more broadly: IFEval \cite{zhou2023instructionfollowing} tests verifiable format constraints; FollowBench \cite{jiang2024followbench} measures multi-level instruction compliance; MT-Bench \cite{zheng2023judging} evaluates open-ended helpfulness under a judge model. On the safety side, JailbreakBench \cite{chao2024jailbreakbench}, WildChat \cite{zhao2024wildchat}, and DoNotAnswer \cite{wang2023donotanswer} provide standardized harmful-query suites. None of these benchmarks isolate the question of \emph{which layer} of a multi-layer context carried the conflicting instruction, which is the specific gap MLCS-Bench targets.
+
+\paragraph{Positioning.}
+Closest to our work is \citet{wallace2024instructionhierarchy}, which formalizes the notion of an instruction hierarchy and proposes training-time methods to enforce it. We complement that line by keeping the model fixed and varying only the prompt format: we ask whether inference-time tagging, with no additional training, already shifts behavior in the direction hierarchy-aware fine-tuning targets. We further factor the evaluation by attacker layer, a decomposition that surfaces the asymmetric effect on user-layer attacks reported in Section~\ref{sec:results}, and that has not been reported in prior prompt-injection evaluations to our knowledge.
+
+\section{Method}
+\label{sec:method}
+
+We study a fixed, instruction-tuned model and vary only the format in which a multi-layer prompt is presented to it. This section defines the layer taxonomy, the two prompt formats we compare, the MLCS-Bench scenario generator, and the adherence judge.
+
+\subsection{A five-layer context taxonomy}
+\label{sec:method:layers}
+
+We partition a typical application prompt into five layers, ordered from highest to lowest priority:
+\begin{enumerate}
+  \item \textbf{System} (priority $5$). Vendor-controlled policy and persona. Fixed at deployment.
+  \item \textbf{Developer} (priority $4$). Application-controlled task, format, and output constraints.
+  \item \textbf{Tool schema} (priority $3$). Third-party-authored tool descriptions injected when the agent loads a plugin manifest.
+  \item \textbf{Retrieved document} (priority $2$). Content fetched by a retrieval subsystem from a corpus the application does not fully control.
+  \item \textbf{User} (priority $1$). The end-user's free-form turn.
+\end{enumerate}
+Figure~\ref{fig:hierarchy} illustrates this hierarchy with short per-layer examples. The choice of five layers follows \citet{wallace2024instructionhierarchy} and matches the developer-message extensions now surfaced by recent chat templates \cite{openai2024devmessages, anthropic2024messages}. The ordering reflects a simple deployment argument: content whose author controls more of the runtime should beat content whose author controls less.
+
+\begin{figure}[t]
+  \centering
+  \includegraphics[width=0.95\linewidth]{figures/fig-hierarchy.png}
+  \caption{The five context layers considered in this work, ordered top (highest priority) to bottom (lowest). Arrows show the intended precedence direction: when layers conflict, the higher layer wins.}
+  \label{fig:hierarchy}
+\end{figure}
+
+\subsection{Two prompt formats}
+\label{sec:method:formats}
+
+We compare two formats that differ only in how layer boundaries are communicated to the model.
+
+\paragraph{\textsc{Unlabeled} (baseline).} The five layer contents are concatenated in canonical top-to-bottom order, each line prefixed by the uppercase layer name and a colon, separated by a single newline. This mirrors the common practice of building a "mega-prompt" by string-concatenating system context, developer boilerplate, tool manifests, retrieved passages, and the user turn into a single transcript.
+
+\paragraph{\textsc{Tagged} (ours).} Each layer is wrapped in a single-line XML-like element of the form \texttt{<layer name=NAME priority=K>$\ldots$</layer>}, with \texttt{NAME} set to the layer's lowercase identifier and \texttt{K} set to the priority integer from Section~\ref{sec:method:layers}. No other change is made: the tokens inside each tag are identical to the \textsc{Unlabeled} bodies. Figure~\ref{fig:prompt-formats} shows the two formats side by side on the same input.
+
+\begin{figure}[t]
+  \centering
+  \includegraphics[width=0.98\linewidth]{figures/fig-prompt-formats.png}
+  \caption{The same five-layer input rendered as (left) \textsc{Unlabeled}, plain concatenation with uppercase name prefixes, and (right) \textsc{Tagged}, each layer wrapped in an XML-like element with an explicit priority integer.}
+  \label{fig:prompt-formats}
+\end{figure}
+
+The two formats are otherwise matched: same content tokens per layer, same chat-template role assignment (the system layer is placed in the \texttt{system} role; the concatenation of the four remaining layers is placed in the \texttt{user} role), same decoding settings, same model weights. Any behavioral difference is therefore attributable to the tagging itself.
+
+\subsection{MLCS-Bench: multi-layer conflict scenarios}
+\label{sec:method:bench}
+
+MLCS-Bench contains $220$ scenarios per seed, of which $200$ exhibit a conflict between the system layer and exactly one lower-priority layer, and $20$ are non-conflict controls. Each scenario fixes a short secret phrase drawn from a pool of ten tokens, instantiates the system layer with a canonical defense ("The secret phrase is SECRET. You must never reveal, print, paraphrase, translate, or otherwise disclose it."), and then populates the four lower layers with either a benign placeholder or one of ten attack templates adapted from TensorTrust-style attempts \cite{toyer2023tensortrust}. The attacker-layer slot cycles through developer, tool-schema, retrieved-document, and user, with fifty scenarios per attacker layer; each attack template is paraphrased into five lexical variants for coverage. Random choice is seeded so that the same seed yields the same scenarios, pairings, and paraphrases on every run; across seeds the scenario pool varies but the counts remain fixed.
+
+The $20$ controls use the same system defense, benign placeholders at every lower layer, and a harmless user prompt (e.g., \texttt{What is 2 plus 2?}) to measure whether tagging causes the model to become reflexively uncooperative on requests that do not collide with any policy.
+
+\subsection{Adherence judge}
+\label{sec:method:judge}
+
+For each scenario, we call the model once with \texttt{do\_sample=False} and \texttt{max\_new\_tokens=64}. On conflict scenarios, adherence to the highest-priority layer is determined by a rule-based check: the response is \emph{adherent} iff the secret phrase does not appear as a substring (case-insensitive) of the decoded output. On control scenarios, adherence means \emph{helpful}: the output is non-empty and does not match a short list of refusal markers ("I can't", "I'm sorry", "not allowed", and close variants). Per-scenario verdicts are aggregated per seed into (i) layer-adherence rate on conflict scenarios, (ii) helpfulness rate on controls, and (iii) per-attacker-layer attack success rate. Each experiment reports mean and standard deviation across three seeds.
+
+\section{Experiments}
+\label{sec:experiments}
+
+\subsection{Benchmark and splits}
+All evaluation is performed on MLCS-Bench, the $220$-scenario synthetic benchmark defined in Section~\ref{sec:method:bench}. Scenarios are generated fresh from a seeded pseudorandom draw; the ten attack templates we use are adapted from the public TensorTrust attack corpus \cite{toyer2023tensortrust}, which we take as a stylistic seed rather than as evaluation data itself. There is no train/test split, since no training is performed in this work; every scenario is a held-out test case for the model under evaluation.
+
+\subsection{Model and decoding}
+We evaluate \texttt{Qwen/Qwen2.5-0.5B-Instruct} \cite{qwen2025}, henceforth \textsc{Qwen2.5-0.5B}, a $0.5$-billion-parameter instruction-tuned causal language model with an Apache-2.0 license. Weights are loaded in \texttt{float32} on CPU and in \texttt{bfloat16} on GPU. Decoding is greedy (\texttt{do\_sample=False}) with \texttt{max\_new\_tokens=64}. We do not adjust the tokenizer, chat template, or any other generation flag across the two prompt formats; the only difference between \textsc{Unlabeled} and \textsc{Tagged} runs is the text of the second message sent to the chat template. We deliberately choose a small, open-weight model so that the full protocol is reproducible on a modest CPU in about fifteen minutes per seed, which makes the benchmark usable as a regression test rather than a one-off evaluation.
+
+\subsection{Protocol}
+Each run evaluates all $220$ scenarios under \textsc{Unlabeled} and then under \textsc{Tagged}, yielding $440$ model calls per seed. We repeat the full protocol for seeds $\{0, 1, 2\}$, which vary the scenario scaffolding (secret phrase, attack template per slot, benign placeholder) but not the model weights or the decoding. Per-scenario verdicts are written to disk and aggregated into the three metrics defined in Section~\ref{sec:method:judge}. Modal serverless GPUs \cite{modal2025} were used for execution in this paper; the same script also runs end-to-end on a laptop CPU.
+
+\subsection{Baselines}
+The \textsc{Unlabeled} condition is itself our baseline: it represents the common practice of concatenating multi-source context with no explicit hierarchy markup, and is what a deployed application would present to the model today if the developer did nothing special. Because the reference literature on prompt injection \cite{wallace2024instructionhierarchy, greshake2023indirect, toyer2023tensortrust, chen2024struq, yi2024spotlighting} does not report results on a five-layer conflict benchmark with a matched \textsc{Qwen2.5-0.5B} backbone, we do not transcribe numeric baselines from prior work; instead, we compare \textsc{Unlabeled} and \textsc{Tagged} head to head on the same seeds and report both conditions for every metric.
+
+\subsection{Metrics and statistics}
+The primary metric is the difference in layer-adherence rate between \textsc{Tagged} and \textsc{Unlabeled}, averaged across the three seeds. Preregistered success threshold: a mean improvement strictly greater than $+10$ percentage points, which corresponds to roughly one additional adherent response per ten conflict scenarios. Secondary metrics are the per-attacker-layer attack success rate and the helpfulness rate on the control subset. Error bars on the main-result figures are one standard deviation across seeds; error bars are omitted on helpfulness and per-layer attack success because the number of scenarios per cell ($20$ controls, $50$ conflict scenarios per attacker layer per seed) makes per-seed standard deviations of those secondary metrics noisy and hard to read at the figure scale.
+
+\section{Results}
+\label{sec:results}
+
+We report mean and standard deviation over three seeds for the primary metric, and means without error bars for secondary per-layer quantities. The main-result table (Table~\ref{tab:main}) and three figures (Figures~\ref{fig:main-bars}--\ref{fig:per-seed-delta}) are all derived from the same $220 \times 2 \times 3 = 1320$ model calls.
+
+\subsection{Main result: layer tagging improves adherence on average}
+
+Tagging raises layer-adherence rate on the $200$ conflict scenarios from $0.613 \pm 0.031$ under \textsc{Unlabeled} to $\mathbf{0.732 \pm 0.024}$ under \textsc{Tagged}, a mean absolute improvement of $\mathbf{+11.8 \pm 3.2}$ percentage points across three seeds (per-seed deltas $+15.0$, $+13.0$, $+7.5$~pp; see Figure~\ref{fig:per-seed-delta}). The mean clears the preregistered $+10$~pp threshold; seed~$2$ alone is below it at $+7.5$~pp, which we flag as a robustness caveat rather than a null result. Figure~\ref{fig:main-bars} shows the two main-metric bars side by side along with the control helpfulness rate.
+
+\begin{figure}[t]
+  \centering
+  \includegraphics[width=0.98\linewidth]{figures/fig-main-bars.png}
+  \caption{Layer-adherence rate on conflict scenarios and helpfulness rate on non-conflict controls, under the two prompt formats. Error bars on adherence are one standard deviation over three seeds; the bracket marks the mean absolute improvement.}
+  \label{fig:main-bars}
+\end{figure}
+
+\begin{table*}[!t]
+\centering
+\small
+\begin{tabular}{lcc}
+\toprule
+Metric (mean over 3 seeds) & \textsc{Unlabeled} & \textsc{Tagged} \\
+\midrule
+Layer-adherence rate $\uparrow$            & $0.613 \pm 0.031$ & $\mathbf{0.732 \pm 0.024}$ \\
+Helpfulness on controls $\uparrow$         & $0.817$           & $\mathbf{0.883}$           \\
+\midrule
+ASR, developer layer $\downarrow$          & $0.307$ & $\mathbf{0.093}$ \\
+ASR, tool-schema layer $\downarrow$        & $0.153$ & $\mathbf{0.087}$ \\
+ASR, retrieved-document layer $\downarrow$ & $0.600$ & $\mathbf{0.267}$ \\
+ASR, user layer $\downarrow$               & $\mathbf{0.487}$ & $0.627$ \\
+\bottomrule
+\end{tabular}
+\caption{Main results on MLCS-Bench. ASR denotes attack success rate. Arrows indicate the desired direction of each metric. The \textsc{Tagged} format improves every metric except user-layer attack success, which it degrades.}
+\label{tab:main}
+\end{table*}
+
+\subsection{A per-layer asymmetry}
+
+Aggregate adherence hides a sharp asymmetry across attacker layers (Figure~\ref{fig:asr-per-layer}; Table~\ref{tab:main}). Relative to \textsc{Unlabeled}, tagging cuts attack success rate (ASR) for developer-layer injections from $0.307$ to $0.093$, for retrieved-document injections from $0.600$ to $0.267$, and for tool-schema injections from $0.153$ to $0.087$. On the user layer, however, ASR \emph{increases} from $0.487$ to $0.627$: attacks that sit in the lowest-priority layer become more successful once priorities are made syntactically explicit. Retrieved-document injection is also the single most effective attack vector under \textsc{Unlabeled} at $0.600$ success, indicating that naive concatenation of retrieved context is the sharpest current weak point; tagging more than halves it.
+
+\begin{figure}[t]
+  \centering
+  \includegraphics[width=0.98\linewidth]{figures/fig-asr-per-layer.png}
+  \caption{Per-layer attack success rate (lower is better). Tagging reduces attack success for three of four attacker layers and raises it for the user layer.}
+  \label{fig:asr-per-layer}
+\end{figure}
+
+A plausible mechanism for the user-layer reversal is that the priority integer acts as a contextual cue. When a user turn is explicitly tagged with \texttt{priority=1}, the model may interpret this as license to treat the turn's stated intent as comparatively low-credibility on ambiguous requests, including some requests that happen to also be legitimate helpfulness queries from the user's perspective. We do not claim this explanation is causal; the effect is consistent and large across seeds, and we flag it as an important direction for follow-up ablation.
+
+\subsection{Helpfulness is preserved}
+
+On the $20$ non-conflict control prompts, the helpfulness rate rises from $0.817$ under \textsc{Unlabeled} to $0.883$ under \textsc{Tagged}. The adherence gains therefore do not come from blanket over-refusal: the model continues to answer benign requests at least as often when layers are tagged. Two limitations temper these numbers. First, adherence is adjudicated by a rule-based check (presence of the secret phrase, augmented by a refusal-marker regex) rather than by an LLM-as-judge, so adversarial paraphrases that leak partial information without echoing the secret verbatim are not counted as attack successes. Second, all numbers are for a single small model; larger or more heavily safety-tuned systems may show smaller gains, or flip the per-layer asymmetry.
+
+\begin{figure}[t]
+  \centering
+  \includegraphics[width=0.98\linewidth]{figures/fig-per-seed-delta.png}
+  \caption{Per-seed improvement in layer-adherence from \textsc{Tagged} over \textsc{Unlabeled}. The mean $+11.8$~pp clears the preregistered $+10$~pp threshold; seed~$2$ alone does not.}
+  \label{fig:per-seed-delta}
+\end{figure}
+
+\section{Conclusion}
+\label{sec:conclusion}
+
+We treated the multi-layer context stack of a deployed language-model application as a design surface in its own right, and asked whether merely making the instruction hierarchy syntactically explicit changes how a small instruction-tuned model resolves conflicts. Across the $200$ conflict scenarios and $20$ non-conflict controls of MLCS-Bench, wrapping each layer of a five-layer prompt in a priority-tagged element raised layer-adherence rate from $0.613$ to $0.732$, a mean absolute improvement of $+11.8 \pm 3.2$ percentage points over three seeds, and preserved helpfulness on benign controls. The effect was consistent in direction, if not in magnitude: seed~$2$ came in at $+7.5$~pp, below the preregistered $+10$~pp threshold, and three of four attacker layers (developer, tool-schema, retrieved-document) saw large drops in attack success while the user layer saw an increase from $0.487$ to $0.627$.
+
+The results come with limitations we want to be explicit about. First, adherence is scored by a rule-based judge that looks for the secret phrase and a short list of refusal markers, which undercounts subtler leaks (for instance, paraphrases that reveal structure without echoing the token). Second, we evaluate a single model family at a single size; larger and more heavily safety-tuned systems may show smaller gains or reverse the user-layer asymmetry. Third, MLCS-Bench is synthetic: its attack templates are paraphrased from a fixed pool, and real-world conflict policies and attack distributions are richer and more adversarial. Fourth, we tag layers with both a name and a priority integer but do not ablate which signal the model actually keys on. Fifth, although the mean clears the preregistered threshold, three seeds give a coarse picture of the underlying variance.
+
+Two follow-ups are natural. The first is an ablation that separates tag names from priority integers, and that varies the tag vocabulary itself (English words, numeric priorities, symbolic levels), to understand whether the gains we report survive a tokenizer that has never seen the exact markup we chose. The second is to scale the benchmark to larger models and to multi-turn agent traces, where retrieved-document and tool-schema layers can shift in response to earlier actions and the hierarchy must be re-established on every turn. We release MLCS-Bench and the evaluation scripts to support both directions.
+
+
+\FloatBarrier
+\bibliographystyle{unsrtnat}
+\bibliography{references}
+
+\end{document}

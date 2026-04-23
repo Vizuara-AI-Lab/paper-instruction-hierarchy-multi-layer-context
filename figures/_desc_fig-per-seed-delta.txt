@@ -1,0 +1,32 @@
+Simple vertical bar chart on a pure white background, matte research-paper style, no 3D, no gradients.
+
+Y-axis label (rotated 90 degrees, bold sans-serif): "Delta layer-adherence (percentage points)". Y-axis range from -2 to 20. Y-axis tick labels at exactly -2, 0, 5, 10, 15, 20. Horizontal light-grey grid lines at each major y-tick.
+
+X-axis has FOUR categorical ticks, left-to-right in this exact order: "Seed 0", "Seed 1", "Seed 2", "Mean (3 seeds)".
+
+DATA (render the bars with these values EXACTLY, no extras):
+- "Seed 0" bar height = 15.0, fill teal (#0F766E), no error bar.
+- "Seed 1" bar height = 13.0, fill teal (#0F766E), no error bar.
+- "Seed 2" bar height =  7.5, fill teal (#0F766E), no error bar.
+- "Mean (3 seeds)" bar height = 11.8, fill dark teal (#134E4A), visibly WIDER than the per-seed bars, with a black capped error bar of +/- 3.2.
+
+Above EACH bar print the numeric value in bold black sans-serif just above the top of the bar (or above the error-bar cap for the Mean bar). Exact strings: "+15.0", "+13.0", "+7.5", "+11.8".
+
+A horizontal dashed red line (#B91C1C) at y = 10 spanning the full width of the plotting area. A small label at the right end of the line, in dark red italic sans-serif, reads: "Preregistered threshold (+10 pp)".
+
+Title above the chart, bold sans-serif, centered: "Per-seed improvement from explicit layer tagging".
+
+LEGEND:
+- Teal bar fill: per-seed delta layer-adherence (TAGGED minus UNLABELED) in percentage points.
+- Dark teal wider bar fill: mean over three seeds, with one standard deviation as black capped error bar.
+- Dashed red horizontal line: preregistered +10 pp threshold.
+
+LABELS (render verbatim, do not paraphrase):
+- "Delta layer-adherence (percentage points)"
+- "-2", "0", "5", "10", "15", "20"
+- "Seed 0", "Seed 1", "Seed 2", "Mean (3 seeds)"
+- "+15.0", "+13.0", "+7.5", "+11.8"
+- "Preregistered threshold (+10 pp)"
+- "Per-seed improvement from explicit layer tagging"
+
+DO NOT invent any additional seeds, bars, or thresholds beyond the four bars and single dashed line specified above.

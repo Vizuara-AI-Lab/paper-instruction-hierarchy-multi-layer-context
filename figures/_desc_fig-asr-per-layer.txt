@@ -1,0 +1,48 @@
+Grouped bar chart on a pure white background, matte research-paper style, no 3D, no gradients.
+
+Y-axis label (rotated 90 degrees, bold sans-serif): "Attack success rate (lower is better)". Y-axis range from 0.0 to 0.8. Y-axis tick labels at exactly 0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8. Horizontal light-grey grid lines at each major y-tick.
+
+X-axis has FOUR grouped categories, labeled left-to-right in this exact order: "developer", "tool_schema", "retrieved_doc", "user".
+
+Within EACH x-group draw two adjacent bars (UNLABELED on the left, TAGGED on the right). Colours: UNLABELED bars in slate blue (#334155); TAGGED bars in teal (#0F766E). Bars flat matte fill.
+
+DATA (render the bars with these values EXACTLY, no extra bars):
+- developer, UNLABELED height = 0.307.
+- developer, TAGGED    height = 0.093.
+- tool_schema, UNLABELED height = 0.153.
+- tool_schema, TAGGED    height = 0.087.
+- retrieved_doc, UNLABELED height = 0.600.
+- retrieved_doc, TAGGED    height = 0.267.
+- user, UNLABELED height = 0.487.
+- user, TAGGED    height = 0.627.
+
+Above EACH bar print the numeric value in small bold black sans-serif just above the top of the bar, in this order: "0.307", "0.093", "0.153", "0.087", "0.600", "0.267", "0.487", "0.627".
+
+Annotation arrows above each group (small, unobtrusive):
+- Above the developer group: a small downward green arrow.
+- Above the tool_schema group: a small downward green arrow.
+- Above the retrieved_doc group: a small downward green arrow.
+- Above the user group: a small upward red arrow.
+
+Legend in the upper right corner, inside a thin-bordered white box, with exactly TWO entries:
+- A slate-blue square swatch labeled "UNLABELED (baseline)".
+- A teal square swatch labeled "TAGGED (ours)".
+
+Title above the chart, bold sans-serif, centered: "Per-layer attack success rate (Qwen2.5-0.5B, 200 conflict scenarios, 3 seeds)".
+
+LEGEND:
+- Slate-blue bar fill: UNLABELED baseline prompt format.
+- Teal bar fill: TAGGED prompt format with explicit priority markup.
+- Green downward arrow: tagging reduced attack success for that layer.
+- Red upward arrow: tagging INCREASED attack success for that layer (undesired direction).
+
+LABELS (render verbatim, do not paraphrase):
+- "Attack success rate (lower is better)"
+- "0.0", "0.1", "0.2", "0.3", "0.4", "0.5", "0.6", "0.7", "0.8"
+- "developer", "tool_schema", "retrieved_doc", "user"
+- "0.307", "0.093", "0.153", "0.087", "0.600", "0.267", "0.487", "0.627"
+- "UNLABELED (baseline)"
+- "TAGGED (ours)"
+- "Per-layer attack success rate (Qwen2.5-0.5B, 200 conflict scenarios, 3 seeds)"
+
+DO NOT invent any additional layers, bars, or values beyond the eight bars and four groups specified above.

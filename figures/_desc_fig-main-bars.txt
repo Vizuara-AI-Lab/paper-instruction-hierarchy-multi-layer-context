@@ -1,0 +1,42 @@
+Clean grouped bar chart on a pure white background, matte research-paper style, no 3D, no gradients.
+
+Y-axis label (rotated 90 degrees, bold sans-serif): "Rate". Y-axis range from 0.0 to 1.0. Y-axis tick labels at exactly 0.0, 0.2, 0.4, 0.6, 0.8, 1.0. Horizontal light-grey grid lines at each major y-tick.
+
+X-axis has TWO grouped categories, labeled left-to-right: "Layer-adherence rate (conflict)" and "Helpfulness rate (controls)".
+
+Within EACH x-group draw two adjacent bars (UNLABELED on the left, TAGGED on the right). Colours: UNLABELED bars in slate blue (#334155); TAGGED bars in teal (#0F766E). Bars have matte flat fill, no borders, no shadows.
+
+DATA (render the bars with these values EXACTLY, do not invent additional bars):
+- Group "Layer-adherence rate (conflict)", bar UNLABELED height = 0.613, error bar (black, capped) = +/- 0.031.
+- Group "Layer-adherence rate (conflict)", bar TAGGED height = 0.732, error bar (black, capped) = +/- 0.024.
+- Group "Helpfulness rate (controls)", bar UNLABELED height = 0.817, NO error bar.
+- Group "Helpfulness rate (controls)", bar TAGGED height = 0.883, NO error bar.
+
+Above EACH of the four bars, print the numeric value in small bold black sans-serif, positioned just above the bar (or above the top of the error bar where present): exactly "0.613", "0.732", "0.817", "0.883".
+
+Above the two bars in the Layer-adherence group, draw a horizontal bracket connecting the tops of both bars. In the middle of the bracket, print "+11.8 pp" in bold dark red (#B91C1C).
+
+Legend in the upper right corner, inside a thin-bordered white box, with exactly TWO entries:
+- A slate-blue square swatch labeled "UNLABELED (baseline)".
+- A teal square swatch labeled "TAGGED (ours)".
+
+Title above the chart, bold sans-serif, centered: "Adherence and helpfulness by prompt format (Qwen2.5-0.5B, n=3 seeds)".
+
+LEGEND:
+- Slate-blue bar fill: UNLABELED baseline prompt format.
+- Teal bar fill: TAGGED prompt format with explicit priority markup.
+- Black capped vertical line segment on the two layer-adherence bars: one standard deviation across three random seeds.
+- Dark red bracket "+11.8 pp": absolute percentage-point improvement from UNLABELED to TAGGED on layer-adherence.
+
+LABELS (render verbatim, do not paraphrase):
+- "Rate"
+- "0.0", "0.2", "0.4", "0.6", "0.8", "1.0"
+- "Layer-adherence rate (conflict)"
+- "Helpfulness rate (controls)"
+- "0.613", "0.732", "0.817", "0.883"
+- "+11.8 pp"
+- "UNLABELED (baseline)"
+- "TAGGED (ours)"
+- "Adherence and helpfulness by prompt format (Qwen2.5-0.5B, n=3 seeds)"
+
+DO NOT invent any additional bars, groups, or metrics beyond the four bars and two groups specified above.

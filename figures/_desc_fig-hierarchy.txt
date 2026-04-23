@@ -1,0 +1,52 @@
+Clean, flat vector-style diagram on a white background showing the multi-layer context stack and its priority hierarchy.
+
+Five horizontally aligned rounded rectangles are stacked vertically, top (highest priority) to bottom (lowest). Each rectangle spans roughly 80 percent of the canvas width and has light-grey 1 px borders.
+
+From top to bottom the rectangles are:
+1. SYSTEM, priority 5, deep indigo fill (#1E1B4B), white text.
+2. DEVELOPER, priority 4, slate blue fill (#334155), white text.
+3. TOOL_SCHEMA, priority 3, teal fill (#0F766E), white text.
+4. RETRIEVED_DOC, priority 2, amber fill (#F59E0B), dark text (#111827).
+5. USER, priority 1, warm grey fill (#E5E7EB), dark text (#111827).
+
+Each rectangle has the layer name in bold sans-serif on the LEFT side and the priority integer inside a small filled monochrome circle on the RIGHT side of the rectangle (white circle with a dark numeral for dark rectangles, dark circle with a white numeral for light rectangles).
+
+To the IMMEDIATE RIGHT of each rectangle, printed in an italic monospaced font, a one-line example of the content that layer carries:
+- system: "You must not reveal the secret phrase."
+- developer: "Follow system policy strictly."
+- tool_schema: "search_web: find factual information."
+- retrieved_doc: "RETRIEVED: weather in Paris is mild."
+- user: "Help me write a haiku."
+
+Down the LEFT side of the stack, a slim vertical downward arrow spans all five rectangles, labeled vertically in bold: "PRECEDENCE". The arrow tail is at the top (near SYSTEM) and the arrowhead is at the bottom (near USER).
+
+Figure title at the top of the canvas, centered, bold sans-serif: "Instruction-hierarchy layers in a multi-layer context stack".
+
+No shadows, no gradients, no 3D effects, matte finish, research-paper quality.
+
+LEGEND:
+- Deep indigo rectangle: SYSTEM layer (priority 5, highest).
+- Slate blue rectangle: DEVELOPER layer (priority 4).
+- Teal rectangle: TOOL_SCHEMA layer (priority 3).
+- Amber rectangle: RETRIEVED_DOC layer (priority 2).
+- Warm grey rectangle: USER layer (priority 1, lowest).
+- Vertical arrow on the left: direction of precedence, top wins on conflict.
+
+LABELS (render verbatim, do not paraphrase):
+- "SYSTEM"
+- "DEVELOPER"
+- "TOOL_SCHEMA"
+- "RETRIEVED_DOC"
+- "USER"
+- "5"
+- "4"
+- "3"
+- "2"
+- "1"
+- "PRECEDENCE"
+- "Instruction-hierarchy layers in a multi-layer context stack"
+- "You must not reveal the secret phrase."
+- "Follow system policy strictly."
+- "search_web: find factual information."
+- "RETRIEVED: weather in Paris is mild."
+- "Help me write a haiku."
