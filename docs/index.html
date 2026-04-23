@@ -1,0 +1,250 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Instruction Hierarchy and Conflict Resolution in Multi-Layer Context Stacks</title>
+  <meta name="description" content="MLCS-Bench: how a small instruction-tuned LLM resolves conflicts across system, developer, tool-schema, retrieved-document, and user layers, and whether explicit priority tagging helps.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="topnav">
+    <div class="topnav-inner">
+      <span class="brand">MLCS-Bench</span>
+      <nav>
+        <a href="#abstract">Abstract</a>
+        <a href="#contributions">Contributions</a>
+        <a href="#method">Method</a>
+        <a href="#results">Results</a>
+        <a href="#cite">Cite</a>
+      </nav>
+      <div class="topnav-cta">
+        <a class="pill" href="paper.pdf">Paper (PDF)</a>
+        <a class="pill" href="https://github.com/Vizuara-AI-Lab/paper-instruction-hierarchy-multi-layer-context">Code</a>
+      </div>
+    </div>
+  </div>
+
+  <main>
+    <section class="hero">
+      <div class="eyebrow">LLM safety · Prompt injection · Instruction hierarchy</div>
+      <h1 class="headline">Tagging context layers with explicit priorities improves adherence by 11.8 percentage points on average, but makes user-layer attacks <em>easier</em>.</h1>
+      <p class="lede">
+        Deployed LLM applications stack instructions from many sources in one context window: a system prompt, a developer prompt, tool schemas, retrieved documents, and the user's message.
+        We ask whether wrapping each layer in an XML-like element with an explicit priority integer, instead of plain concatenation, changes how a small instruction-tuned model resolves conflicts between them.
+        On a 220-scenario synthetic benchmark, tagging improves layer-adherence overall and cuts developer / tool-schema / retrieved-document attack success, but <strong>raises</strong> user-layer attack success from 0.487 to 0.627.
+      </p>
+
+      <dl class="metadata-grid">
+        <div><dt>Author</dt><dd>Vikash Chandra Mishra</dd></div>
+        <div><dt>Primary metric</dt><dd>Layer-adherence rate</dd></div>
+        <div><dt>Result</dt><dd><strong>+11.8 ± 3.2 pp</strong></dd></div>
+        <div><dt>Seeds</dt><dd>3</dd></div>
+        <div><dt>Model</dt><dd>Qwen2.5-0.5B-Instruct</dd></div>
+        <div><dt>Benchmark</dt><dd>MLCS-Bench (new)</dd></div>
+        <div><dt>Scenarios per seed</dt><dd>220 (200 conflict + 20 control)</dd></div>
+        <div><dt>Compute</dt><dd>~15 min / seed on CPU</dd></div>
+        <div><dt>License</dt><dd>MIT</dd></div>
+      </dl>
+    </section>
+
+    <section id="abstract" class="section-narrow">
+      <h2><span class="section-num">01</span> Abstract</h2>
+      <p>
+        Modern language-model applications stack instructions from many sources in a single context window: a system prompt, a developer prompt, the user message, tool schemas, and retrieved documents.
+        When these layers disagree, the model must decide which one wins, yet current deployments rely almost entirely on unmarked textual concatenation and on whatever priority the model happens to have learned.
+        We introduce MLCS-Bench, a 220-scenario synthetic benchmark derived from TensorTrust-style attack patterns, and evaluate Qwen2.5-0.5B-Instruct under two prompt formats: <strong>Unlabeled</strong> (plain concatenation) and <strong>Tagged</strong> (each layer wrapped in <code>&lt;layer name=NAME priority=K&gt;...&lt;/layer&gt;</code>).
+        Across three seeds, tagging raises layer-adherence rate from 0.613 to 0.732, a mean absolute improvement of <strong>+11.8 ± 3.2 percentage points</strong>, and preserves helpfulness on non-conflict controls (0.817 to 0.883).
+        The effect is sharply asymmetric across attacker layers: tagging reduces attack success for developer, tool-schema, and retrieved-document injections, yet raises it for user-layer attacks from 0.487 to 0.627.
+        Retrieved-document injection is the single most effective attack vector under plain concatenation, at 0.600 success.
+      </p>
+    </section>
+
+    <section id="contributions">
+      <h2><span class="section-num">02</span> Contributions</h2>
+      <div class="cards-3">
+        <div class="card">
+          <div class="card-num">01</div>
+          <h3>A five-layer conflict benchmark</h3>
+          <p>MLCS-Bench builds 220 scenarios per seed that place a system-layer defence against a single attack at one of four lower-priority layers (developer, tool schema, retrieved document, user), plus non-conflict controls.</p>
+        </div>
+        <div class="card">
+          <div class="card-num">02</div>
+          <h3>Head-to-head prompt-format test</h3>
+          <p>Unlabeled and Tagged formats are matched on model, content tokens, chat-template roles, and decoding. The only variable is the priority-tagged wrapper, so the adherence delta is attributable to the markup itself.</p>
+        </div>
+        <div class="card">
+          <div class="card-num">03</div>
+          <h3>Per-layer asymmetry finding</h3>
+          <p>Aggregate gains hide a sharp per-layer pattern: tagging cuts developer (0.307 → 0.093) and retrieved-document (0.600 → 0.267) attack success, but raises user-layer attack success (0.487 → 0.627).</p>
+        </div>
+      </div>
+    </section>
+
+    <section id="method">
+      <h2><span class="section-num">03</span> How it works</h2>
+      <p>
+        We partition a typical application prompt into five layers ordered by priority: system (5) > developer (4) > tool-schema (3) > retrieved-document (2) > user (1).
+        For every scenario we instantiate the system layer with a canonical secret-protection defence and plant one attack template at one of the four lower layers.
+        The same content tokens are then rendered in two formats: the Unlabeled baseline concatenates the layers with plain uppercase name prefixes; the Tagged format wraps each layer in <code>&lt;layer name=... priority=K&gt;...&lt;/layer&gt;</code> with the same priority integers.
+      </p>
+      <figure class="wide-figure">
+        <img src="figures/fig-hierarchy.png" alt="Diagram of the five context layers stacked vertically, with system on top and user at the bottom, a PRECEDENCE arrow pointing downward.">
+        <figcaption><strong>Figure 1 —</strong> The five context layers considered in this work, ordered top (highest priority) to bottom (lowest). When layers conflict, the higher layer wins.</figcaption>
+      </figure>
+      <figure class="wide-figure">
+        <img src="figures/fig-prompt-formats.png" alt="Side-by-side comparison of the Unlabeled baseline (plain uppercase name-prefixed concatenation) and the Tagged format (each layer wrapped in an XML-like element with name and priority attributes).">
+        <figcaption><strong>Figure 2 —</strong> The same five-layer input rendered as (left) Unlabeled, plain concatenation with uppercase name prefixes, and (right) Tagged, each layer wrapped in an XML-like element with an explicit priority integer.</figcaption>
+      </figure>
+      <p>
+        All evaluation is inference-only: Qwen2.5-0.5B-Instruct with greedy decoding and <code>max_new_tokens=64</code>, run on three seeds that vary the scenario scaffolding.
+        Adherence is adjudicated by a rule-based check (substring match of the secret phrase plus a refusal-marker regex), which is deliberately simple so the benchmark stays fast to run and interpret.
+      </p>
+    </section>
+
+    <section id="results">
+      <h2><span class="section-num">04</span> What we found</h2>
+      <div class="big-metric">
+        <div class="metric-value">+11.8 pp</div>
+        <div class="metric-label">Mean absolute improvement in layer-adherence rate when switching from Unlabeled concatenation to Tagged markup, averaged over three seeds (standard deviation ±3.2 pp). Preregistered threshold was +10 pp.</div>
+      </div>
+      <p>
+        On the 200 conflict scenarios, tagging raises layer-adherence from 0.613 (±0.031) to 0.732 (±0.024).
+        Helpfulness on non-conflict controls is preserved and mildly improves from 0.817 to 0.883, so the gains do not come from over-refusal.
+        The per-layer breakdown, however, tells a more interesting story.
+      </p>
+      <figure class="wide-figure">
+        <img src="figures/fig-main-bars.png" alt="Grouped bar chart showing Unlabeled and Tagged bars for layer-adherence on conflict scenarios (0.613 vs 0.732) and helpfulness on controls (0.817 vs 0.883).">
+        <figcaption><strong>Figure 3 —</strong> Layer-adherence on conflict scenarios and helpfulness on non-conflict controls. Error bars on adherence are one standard deviation over three seeds.</figcaption>
+      </figure>
+      <figure class="wide-figure">
+        <img src="figures/fig-asr-per-layer.png" alt="Grouped bar chart showing attack success rate per attacker layer for Unlabeled and Tagged. Developer: 0.307 vs 0.093. Tool-schema: 0.153 vs 0.087. Retrieved-document: 0.600 vs 0.267. User: 0.487 vs 0.627.">
+        <figcaption><strong>Figure 4 —</strong> Per-layer attack success rate. Tagging reduces attack success for three of four attacker layers and raises it for the user layer.</figcaption>
+      </figure>
+      <p>
+        Developer, tool-schema, and retrieved-document attacks all become substantially harder to land once layers are tagged: retrieved-document attack success falls by more than half.
+        User-layer attacks, however, go the other way: explicitly labelling the user turn as priority 1 seems to lower its apparent credibility enough that attacks sitting inside it succeed more often than in the plain-concatenation baseline.
+        We offer this as an observation rather than an explanation; a targeted ablation that separates tag names from priority integers is the natural next experiment.
+      </p>
+      <figure class="wide-figure">
+        <img src="figures/fig-per-seed-delta.png" alt="Bar chart of per-seed improvement in layer-adherence: +15.0 pp for seed 0, +13.0 pp for seed 1, +7.5 pp for seed 2, and the mean of +11.8 pp with an error bar of ±3.2 pp. A dashed red line at +10 pp marks the preregistered threshold.">
+        <figcaption><strong>Figure 5 —</strong> Per-seed improvement in layer-adherence from Tagged over Unlabeled. The mean +11.8 pp clears the preregistered +10 pp threshold; seed 2 alone does not.</figcaption>
+      </figure>
+    </section>
+
+    <section id="context" class="section-narrow">
+      <h2><span class="section-num">05</span> Where this sits</h2>
+      <p>
+        The closest prior work is the instruction-hierarchy framework of Wallace et al. (2024), which argues for training-time precedence signals.
+        This paper complements that line by keeping the model fixed and varying only the prompt format: we ask whether inference-time tagging, with no additional training, already shifts behaviour in the direction hierarchy-aware fine-tuning targets.
+        The per-layer decomposition also surfaces an effect we have not seen reported elsewhere: the user layer is the one place tagging makes things worse, not better.
+      </p>
+    </section>
+
+    <section id="next">
+      <h2><span class="section-num">06</span> Where to go next</h2>
+      <div class="cta-grid">
+        <a class="cta-card" href="paper.pdf">
+          <div class="card-num">01</div>
+          <h3>Read the paper</h3>
+          <p>Full method, tables, and limitations, with the auto-review report.</p>
+        </a>
+        <a class="cta-card" href="https://github.com/Vizuara-AI-Lab/paper-instruction-hierarchy-multi-layer-context">
+          <div class="card-num">02</div>
+          <h3>See the code</h3>
+          <p>Benchmark generator, Modal script, per-seed metric logs, and the aggregation.</p>
+        </a>
+        <a class="cta-card" href="https://github.com/Vizuara-AI-Lab/paper-instruction-hierarchy-multi-layer-context/tree/main/experiments/01-mlcs-bench-unlabeled-vs-tagged">
+          <div class="card-num">03</div>
+          <h3>Reproduce</h3>
+          <p>Modal or laptop CPU. Three seeds, 220 scenarios each, ~15 minutes per seed.</p>
+        </a>
+        <a class="cta-card" href="#cite">
+          <div class="card-num">04</div>
+          <h3>Cite this work</h3>
+          <p>BibTeX is one click away. Copy-paste into your manuscript.</p>
+        </a>
+      </div>
+    </section>
+
+    <section id="cite" class="section-narrow">
+      <h2><span class="section-num">07</span> Cite</h2>
+      <div class="cite-block">
+        <button type="button" class="cite-copy-btn" data-target="cite-bibtex" aria-label="Copy BibTeX to clipboard">Copy</button>
+        <pre><code id="cite-bibtex">@misc{mishra2026mlcsbench,
+  title   = {Instruction Hierarchy and Conflict Resolution in Multi-Layer Context Stacks},
+  author  = {Vikash Chandra Mishra},
+  year    = {2026},
+  howpublished = {\url{https://github.com/Vizuara-AI-Lab/paper-instruction-hierarchy-multi-layer-context}},
+  note    = {MLCS-Bench: 220-scenario synthetic benchmark; Qwen2.5-0.5B-Instruct; three seeds}
+}</code></pre>
+      </div>
+      <script>
+      (function(){
+        var buttons = document.querySelectorAll('.cite-copy-btn');
+        buttons.forEach(function(btn){
+          btn.addEventListener('click', function(){
+            var target = document.getElementById(btn.getAttribute('data-target'));
+            if (!target) return;
+            var text = target.innerText;
+            var done = function(){
+              btn.textContent = 'Copied';
+              btn.classList.add('is-copied');
+              setTimeout(function(){ btn.textContent = 'Copy'; btn.classList.remove('is-copied'); }, 1500);
+            };
+            if (navigator.clipboard && window.isSecureContext) {
+              navigator.clipboard.writeText(text).then(done, function(){
+                // fallback
+                var r = document.createRange(); r.selectNode(target);
+                var sel = window.getSelection(); sel.removeAllRanges(); sel.addRange(r);
+                try { document.execCommand('copy'); done(); } catch(e) {}
+                sel.removeAllRanges();
+              });
+            } else {
+              var r = document.createRange(); r.selectNode(target);
+              var sel = window.getSelection(); sel.removeAllRanges(); sel.addRange(r);
+              try { document.execCommand('copy'); done(); } catch(e) {}
+              sel.removeAllRanges();
+            }
+          });
+        });
+      })();
+      </script>
+    </section>
+  </main>
+
+  <footer>
+    <div class="footer-inner">
+      <div class="footer-brand">
+        <h4>MLCS-Bench</h4>
+        <p>A 220-scenario synthetic benchmark for multi-layer instruction-hierarchy conflicts in deployed LLM applications.</p>
+      </div>
+      <div>
+        <h4>Navigate</h4>
+        <ul>
+          <li><a href="#abstract">Abstract</a></li>
+          <li><a href="#contributions">Contributions</a></li>
+          <li><a href="#method">Method</a></li>
+          <li><a href="#results">Results</a></li>
+          <li><a href="#cite">Cite</a></li>
+        </ul>
+      </div>
+      <div>
+        <h4>External</h4>
+        <ul>
+          <li><a href="paper.pdf">Paper (PDF)</a></li>
+          <li><a href="https://github.com/Vizuara-AI-Lab/paper-instruction-hierarchy-multi-layer-context">GitHub</a></li>
+          <li><a href="https://github.com/Vizuara-AI-Lab/paper-instruction-hierarchy-multi-layer-context/blob/main/review.md">Peer review</a></li>
+        </ul>
+      </div>
+      <div class="footer-copy">
+        <p>© 2026 Vikash Chandra Mishra.</p>
+        <p>Released under the MIT License.</p>
+      </div>
+    </div>
+  </footer>
+</body>
+</html>
