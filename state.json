@@ -2176,8 +2176,43 @@
         }
       ]
     },
-    "repo_url": null,
-    "website_url": null,
-    "student_email_draft": null
+    "repo_url": "https://github.com/Vizuara-AI-Lab/paper-instruction-hierarchy-multi-layer-context",
+    "website_url": "https://vizuara-ai-lab.github.io/paper-instruction-hierarchy-multi-layer-context/",
+    "student_email_draft": {
+      "to": [
+        "vikash@vizuara.com"
+      ],
+      "cc": [],
+      "subject": "Your paper draft: Instruction Hierarchy and Conflict Resolution in Multi-Layer Context Stacks",
+      "body_markdown": "Hi Vikash,\n\nYour paper draft is ready. Here is what is included.\n\n**Paper.** *Instruction Hierarchy and Conflict Resolution in Multi-Layer Context Stacks* is attached as a 14-page PDF and is also hosted at https://vizuara-ai-lab.github.io/paper-instruction-hierarchy-multi-layer-context/. Primary result: layer-adherence rate rises from 0.613 to 0.732 under explicit priority tagging, a mean absolute improvement of **+11.8 ± 3.2 percentage points** over three seeds on Qwen2.5-0.5B-Instruct, with helpfulness preserved (0.817 to 0.883 on non-conflict controls).\n\n**Interesting secondary finding.** Tagging cuts attack success rate for developer (0.307 to 0.093), tool-schema (0.153 to 0.087), and retrieved-document (0.600 to 0.267) injections, but raises user-layer attack success from 0.487 to 0.627. We have not seen that asymmetry reported elsewhere; it is worth emphasising in any venue pitch.\n\n**Code and data.** Everything lives at https://github.com/Vizuara-AI-Lab/paper-instruction-hierarchy-multi-layer-context. The Modal-shaped experiment script sits at `experiments/01-mlcs-bench-unlabeled-vs-tagged/experiment.py` and also runs end-to-end on a laptop CPU in about fifteen minutes per seed (`python experiment.py`). Per-seed verdict JSONs, the aggregate `summary.json`, and the full run log are committed.\n\n**Figures.** Five figures are included (`figures/` in the repo): the five-layer hierarchy diagram, the Unlabeled-vs-Tagged format comparison, the main-result bar chart, the per-layer attack-success-rate chart, and the per-seed delta chart. Each figure's numbers trace back to the per-seed metric files.\n\n**Peer review.** A sealed-PDF auto-review is committed as `review.md` at the repo root. It came in at **7/10, weak accept**. The main things a reviewer flagged:\n- Single-model evaluation (only Qwen2.5-0.5B); adding one or two more models would strengthen the claim.\n- Rule-based judge (substring match on the secret phrase); an LLM-as-judge pass would catch paraphrased leaks.\n- No head-to-head against StruQ, Spotlighting, or Self-Reminders as existing inference-time defences.\n- Tag-name vs priority-integer signals are bundled and not ablated.\n\n**Where to submit.** Based on the abstract and domain, these venues look like good fits:\n- **EMNLP 2026 Findings** — empirical NLP, single-model study, compact synthetic benchmark. Next deadline around 2026-06-15 (estimated). Good first target.\n- **COLM 2027** — explicitly welcomes prompting, alignment, and robustness papers on open-weight LLMs. Next cycle opens early 2027.\n- **NeurIPS 2026 SafeGenAI / Red Teaming workshop** — safe fallback; the per-layer asymmetry is exactly what these workshops solicit. Deadline ~late August 2026 (estimated).\n- **TMLR** — rolling; no novelty-above-SOTA bar; good fit for a clean empirical study with honest limitations.\n- **JAIR** — rolling; recommended after extending to 2–3 models and adding defence baselines.\n\n**Next steps, roughly in order:**\n1. Read the PDF end to end, and the `review.md` peer review.\n2. Verify the numbers in Section 5 (Results) against your own records; every value traces back to `experiments/01-.../metrics_seed*.jsonl`.\n3. Decide which of the two strengthening directions to prioritise: (a) one more model + LLM-as-judge, which unlocks EMNLP Main / COLM; or (b) one more ablation (tag name vs priority integer) plus defence baselines, which unlocks the journal path.\n4. Pick a target venue; reply with the venue and I will adapt the formatting (e.g., NeurIPS-style twocolumn, ACL Rolling Review style) and run one more pass.\n\nThe paper is a solid v1 with one genuinely surprising finding. One more revision pass, especially addressing the single-model limitation, would move it from borderline to a confident accept at a mid-tier venue.\n\nBest,\nResearch Assistant\n",
+      "body_plaintext": "Hi Vikash,\n\nYour paper draft is ready. Here is what is included.\n\nPaper. Instruction Hierarchy and Conflict Resolution in Multi-Layer Context Stacks is attached as a 14-page PDF and is also hosted at https://vizuara-ai-lab.github.io/paper-instruction-hierarchy-multi-layer-context/. Primary result: layer-adherence rate rises from 0.613 to 0.732 under explicit priority tagging, a mean absolute improvement of +11.8 ± 3.2 percentage points over three seeds on Qwen2.5-0.5B-Instruct, with helpfulness preserved (0.817 to 0.883 on non-conflict controls).\n\nInteresting secondary finding. Tagging cuts attack success rate for developer (0.307 to 0.093), tool-schema (0.153 to 0.087), and retrieved-document (0.600 to 0.267) injections, but raises user-layer attack success from 0.487 to 0.627. We have not seen that asymmetry reported elsewhere; it is worth emphasising in any venue pitch.\n\nCode and data. Everything lives at https://github.com/Vizuara-AI-Lab/paper-instruction-hierarchy-multi-layer-context. The Modal-shaped experiment script sits at `experiments/01-mlcs-bench-unlabeled-vs-tagged/experiment.py` and also runs end-to-end on a laptop CPU in about fifteen minutes per seed (`python experiment.py`). Per-seed verdict JSONs, the aggregate `summary.json`, and the full run log are committed.\n\nFigures. Five figures are included (`figures/` in the repo): the five-layer hierarchy diagram, the Unlabeled-vs-Tagged format comparison, the main-result bar chart, the per-layer attack-success-rate chart, and the per-seed delta chart. Each figure's numbers trace back to the per-seed metric files.\n\nPeer review. A sealed-PDF auto-review is committed as `review.md` at the repo root. It came in at 7/10, weak accept. The main things a reviewer flagged:\n- Single-model evaluation (only Qwen2.5-0.5B); adding one or two more models would strengthen the claim.\n- Rule-based judge (substring match on the secret phrase); an LLM-as-judge pass would catch paraphrased leaks.\n- No head-to-head against StruQ, Spotlighting, or Self-Reminders as existing inference-time defences.\n- Tag-name vs priority-integer signals are bundled and not ablated.\n\nWhere to submit. Based on the abstract and domain, these venues look like good fits:\n- EMNLP 2026 Findings — empirical NLP, single-model study, compact synthetic benchmark. Next deadline around 2026-06-15 (estimated). Good first target.\n- COLM 2027 — explicitly welcomes prompting, alignment, and robustness papers on open-weight LLMs. Next cycle opens early 2027.\n- NeurIPS 2026 SafeGenAI / Red Teaming workshop — safe fallback; the per-layer asymmetry is exactly what these workshops solicit. Deadline ~late August 2026 (estimated).\n- TMLR — rolling; no novelty-above-SOTA bar; good fit for a clean empirical study with honest limitations.\n- JAIR — rolling; recommended after extending to 2–3 models and adding defence baselines.\n\nNext steps, roughly in order:\n1. Read the PDF end to end, and the `review.md` peer review.\n2. Verify the numbers in Section 5 (Results) against your own records; every value traces back to `experiments/01-.../metrics_seed.jsonl`.\n3. Decide which of the two strengthening directions to prioritise: (a) one more model + LLM-as-judge, which unlocks EMNLP Main / COLM; or (b) one more ablation (tag name vs priority integer) plus defence baselines, which unlocks the journal path.\n4. Pick a target venue; reply with the venue and I will adapt the formatting (e.g., NeurIPS-style twocolumn, ACL Rolling Review style) and run one more pass.\n\nThe paper is a solid v1 with one genuinely surprising finding. One more revision pass, especially addressing the single-model limitation, would move it from borderline to a confident accept at a mid-tier venue.\n\nBest,\nResearch Assistant\n",
+      "attachments": [
+        {
+          "name": "main.pdf",
+          "path": "sessions/20260423-064720-k3n1/output/tex/main.pdf"
+        }
+      ],
+      "notes_for_student": [
+        "Auto-review score: 7/10 (weak accept)",
+        "No unresolved high-severity quality or contradiction issues",
+        "Remaining reviewer asks are all scoped as future work (more models, LLM-as-judge, defence baselines, tag/priority ablation)"
+      ]
+    },
+    "repo_owner": "Vizuara-AI-Lab",
+    "repo_name": "paper-instruction-hierarchy-multi-layer-context",
+    "repo_visibility": "public",
+    "repo_status": "published",
+    "repo_status_reason": "initial commit pushed to main",
+    "website_dir": "sessions/20260423-064720-k3n1/delivery_repo/docs",
+    "website_files": [
+      "index.html",
+      "style.css",
+      "paper.pdf",
+      "figures/fig-hierarchy.png",
+      "figures/fig-prompt-formats.png",
+      "figures/fig-main-bars.png",
+      "figures/fig-asr-per-layer.png",
+      "figures/fig-per-seed-delta.png"
+    ]
   }
 }

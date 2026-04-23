@@ -24,3 +24,8 @@
 - 2026-04-23T07:38:00Z | Stage 8.3 | latex-compile | pass(iter=2) | promoted results table to table*; PDF 3.07 MiB, 14 pages; no fatal errors, only underfull/overfull hbox warnings.
 - 2026-04-23T07:40:00Z | Stage 8.4 | latex-visual-audit | pass | 14 pages rendered; 0 blocking (after table* fix); 0H/0M/0L after mechanical validator PASS; LLM spot-check of pages 1, 3, 4, 5, 7, 13, 14 confirms proper title, figures, table, and bibliography layout.
 - 2026-04-23T07:45:00Z | Stage 9 | auto-review | pass(iter=1) | balanced/intermediate; score=7/10; recommendation=weak_accept; 5 strengths, 7 weaknesses (4 medium + 3 low); remaining gaps (more models, LLM-as-judge, defense baselines) require new experiments beyond v1 scope. review.md written to output/review.md. Exit loop.
+- 2026-04-23T07:50:00Z | Stage 10.1 | recommend-venues | pass | 3 conferences (EMNLP 2026 Findings, COLM 2027, NeurIPS 2026 SafeGenAI/Red Teaming workshop) + 2 journals (TMLR, JAIR).
+- 2026-04-23T07:52:00Z | Stage 10.2 | venue-format | skip | config.target_venue_style is null.
+- 2026-04-23T07:55:00Z | Stage 11.1 | create-repo | pass | Vizuara-AI-Lab/paper-instruction-hierarchy-multi-layer-context (public, MIT, clean slug, no session-hex suffix); initial commit pushed.
+- 2026-04-23T07:58:00Z | Stage 11.2 | build-project-site | pass | docs/ published; site URL https://vizuara-ai-lab.github.io/paper-instruction-hierarchy-multi-layer-context/; sticky nav + metadata grid + numbered sections + big-metric callout + CTA grid + copy-to-clipboard Cite button; GitHub Pages enabled via API.
+- 2026-04-23T07:59:00Z | Stage 11.3 | draft-delivery-email | pass | to=vikash@vizuara.com; subject 93 chars; body 529 words; 3 notes_for_student. NOT auto-sent.
